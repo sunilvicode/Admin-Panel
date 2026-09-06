@@ -3,6 +3,7 @@ import {
   registerUser,
   loginUser,
   getAllUser,
+  getUserStats,
   updateUser,
   deleteUser,
   forgotPassword,
@@ -10,42 +11,60 @@ import {
   updateRole,
 } from "../controllers/userController.js";
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
+import {
+  registerValidation,
+  loginValidation,
+  forgotPasswordValidation,
+  resetPasswordValidation,
+  updateUserValidation,
+  updateRoleValidation,
+} from "../middlewares/validationMiddleware.js";
 
 const router = express.Router();
 
-// ── Public routes (no auth needed) ───────────────────────────
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+// ── Public routes (with validation) ───────────────────────────────
+router.post("/register", registerValidation, registerUser);
+router.post("/login", loginValidation, loginUser);
+router.post("/forgot-password", forgotPasswordValidation, forgotPassword);
+router.post("/reset-password", resetPasswordValidation, resetPassword);
 
-// ── Protected routes (login required) ────────────────────────
+// ── Admin routes (login required) ─────────────────────────────────
 router.get(
-  "/profile",
+  "/",
   protect,
   authorizeRoles("admin", "superadmin"),
   getAllUser
+);
+
+// User stats for dashboard analytics
+router.get(
+  "/stats",
+  protect,
+  authorizeRoles("admin", "superadmin"),
+  getUserStats
 );
 
 router.put(
   "/:id",
   protect,
   authorizeRoles("admin", "superadmin"),
+  updateUserValidation,
   updateUser
 );
 
 router.delete(
   "/:id",
   protect,
-  authorizeRoles("superadmin"), // only superadmin can delete
+  authorizeRoles("superadmin"),
   deleteUser
 );
 
-// ── superadmin only ───────────────────────────────────────────
+// ── Superadmin only — change roles ─────────────────────────────────
 router.patch(
   "/:id/role",
   protect,
   authorizeRoles("superadmin"),
+  updateRoleValidation,
   updateRole
 );
 
